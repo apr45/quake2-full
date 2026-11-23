@@ -813,23 +813,36 @@ BLASTER / HYPERBLASTER
 ======================================================================
 */
 
-void Blaster_Fire (edict_t *ent, vec3_t g_offset, int damage, qboolean hyper, int effect)
+void Blaster_Fire(edict_t* ent, vec3_t g_offset, int damage, qboolean hyper, int effect)
 {
 	vec3_t	forward, right;
 	vec3_t	start;
 	vec3_t	offset;
 
+	if ((!ent) || (!ent->client)) {
+		gi.dprintf("Pointer null on Blaster_Fire() function\n");
+		return;
+	}
+
 	if (is_quad)
 		damage *= 4;
-	AngleVectors (ent->client->v_angle, forward, right, NULL);
-	VectorSet(offset, 24, 8, ent->viewheight-8);
-	VectorAdd (offset, g_offset, offset);
-	P_ProjectSource (ent->client, ent->s.origin, offset, forward, right, start);
+	AngleVectors(ent->client->v_angle, forward, right, NULL);
+	VectorSet(offset, 24, 8, ent->viewheight - 8);
+	VectorAdd(offset, g_offset, offset);
+	P_ProjectSource(ent->client, ent->s.origin, offset, forward, right, start);
 
-	VectorScale (forward, -2, ent->client->kick_origin);
+	VectorScale(forward, -2, ent->client->kick_origin);
 	ent->client->kick_angles[0] = -1;
 
-	fire_blaster (ent, start, forward, damage, 1000, effect, hyper);
+	// projectile shoots at a random direction
+		for (int i = 0; i < 3; i++) {
+			float randNum = 10 * crandom();
+			forward[i] = (randNum < 0) ? (randNum * -1) : randNum;
+		}
+
+	// change projectile from blast to grenade
+		//fire_blaster (ent, start, forward, damage, 1000, effect, hyper);
+		fire_grenade(ent, start, forward, damage, 200, 1, 850);
 
 	// send muzzle flash
 	gi.WriteByte (svc_muzzleflash);
@@ -852,6 +865,7 @@ void Weapon_Blaster_Fire (edict_t *ent)
 		damage = 15;
 	else
 		damage = 10;
+
 	Blaster_Fire (ent, vec3_origin, damage, false, EF_BLASTER);
 	ent->client->ps.gunframe++;
 }
@@ -859,7 +873,15 @@ void Weapon_Blaster_Fire (edict_t *ent)
 void Weapon_Blaster (edict_t *ent)
 {
 	static int	pause_frames[]	= {19, 32, 0};
-	static int	fire_frames[]	= {5, 0};
+	static int	fire_frames[]	= {5,6,0};
+
+	/*
+	animations
+	0-4 = gun out
+	5-8 = firing gun
+	9-52 = wait
+	53-55 = gun away
+	*/
 
 	Weapon_Generic (ent, 4, 8, 52, 55, pause_frames, fire_frames, Weapon_Blaster_Fire);
 }
@@ -960,6 +982,7 @@ void Machinegun_Fire (edict_t *ent)
 	int			kick = 2;
 	vec3_t		offset;
 
+	// bitwise AND = compares bit by bit
 	if (!(ent->client->buttons & BUTTON_ATTACK))
 	{
 		ent->client->machinegun_shots = 0;
@@ -1054,6 +1077,11 @@ void Chaingun_Fire (edict_t *ent)
 	vec3_t		offset;
 	int			damage;
 	int			kick = 2;
+
+	if ((!ent) || (!ent->client)) {
+		gi.dprintf("Pointer null on Chaingun_Fire() function\n");
+		return;
+	}
 
 	if (deathmatch->value)
 		damage = 6;
@@ -1370,6 +1398,11 @@ void weapon_bfg_fire (edict_t *ent)
 	vec3_t	forward, right;
 	int		damage;
 	float	damage_radius = 1000;
+
+	if ((!ent) || (!ent->client)) {
+		gi.dprintf("Pointer null on weapon_bfg_fire() function\n");
+		return;
+	}
 
 	if (deathmatch->value)
 		damage = 200;

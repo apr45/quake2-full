@@ -614,6 +614,23 @@ void rocket_touch (edict_t *ent, edict_t *other, cplane_t *plane, csurface_t *su
 	gi.WritePosition (origin);
 	gi.multicast (ent->s.origin, MULTICAST_PHS);
 
+	/*
+	// sets random directions for generades
+		vec3_t dir1;
+		vec3_t dir2;
+		for (int i = 0; i < 3; i++) {
+			float randNum = 10 * crandom();
+			dir1[i] = (randNum < 0) ? (randNum * -1) : randNum;
+
+			randNum = 10 * crandom();
+			dir2[i] = (randNum < 0) ? (randNum * -1) : randNum;
+		}
+
+	// fire grenades after rocket explodes
+		fire_grenade(ent->owner, ent->s.origin, dir1, 150, 200, 1, 850);
+		fire_grenade(ent->owner, ent->s.origin, dir2, 150, 200, 1, 850);
+	*/
+
 	G_FreeEdict (ent);
 }
 
@@ -718,6 +735,8 @@ void fire_rail (edict_t *self, vec3_t start, vec3_t aimdir, int damage, int kick
 fire_bfg
 =================
 */
+int exploded;
+
 void bfg_explode (edict_t *self)
 {
 	edict_t	*ent;
@@ -752,7 +771,7 @@ void bfg_explode (edict_t *self)
 			gi.WriteByte (TE_BFG_EXPLOSION);
 			gi.WritePosition (ent->s.origin);
 			gi.multicast (ent->s.origin, MULTICAST_PHS);
-			T_Damage (ent, self, self->owner, self->velocity, ent->s.origin, vec3_origin, (int)points, 0, DAMAGE_ENERGY, MOD_BFG_EFFECT);
+			//T_Damage (ent, self, self->owner, self->velocity, ent->s.origin, vec3_origin, (int)points, 0, DAMAGE_ENERGY, MOD_BFG_EFFECT);
 		}
 	}
 
@@ -760,6 +779,26 @@ void bfg_explode (edict_t *self)
 	self->s.frame++;
 	if (self->s.frame == 5)
 		self->think = G_FreeEdict;
+
+	 
+	if (exploded == 1) {
+		// sets random directions for generades
+		vec3_t dir1;
+		vec3_t dir2;
+		for (int i = 0; i < 3; i++) {
+			float randNum = 10 * crandom();
+			dir1[i] = (randNum < 0) ? (randNum * -1) : randNum;
+
+			randNum = 10 * crandom();
+			dir2[i] = (randNum < 0) ? (randNum * -1) : randNum;
+		}
+
+		// fire grenades after rocket explodes
+		fire_grenade(self->owner, self->s.origin, dir1, 150, 200, 1, 850);
+		fire_grenade(self->owner, self->s.origin, dir2, 150, 200, 1, 850);
+
+		exploded = 0;
+	}
 }
 
 void bfg_touch (edict_t *self, edict_t *other, cplane_t *plane, csurface_t *surf)
@@ -778,8 +817,9 @@ void bfg_touch (edict_t *self, edict_t *other, cplane_t *plane, csurface_t *surf
 
 	// core explosion - prevents firing it into the wall/floor
 	if (other->takedamage)
-		T_Damage (other, self, self->owner, self->velocity, self->s.origin, plane->normal, 200, 0, 0, MOD_BFG_BLAST);
-	T_RadiusDamage(self, self->owner, 200, other, 100, MOD_BFG_BLAST);
+		//T_Damage (other, self, self->owner, self->velocity, self->s.origin, plane->normal, 200, 0, 0, MOD_BFG_BLAST);
+	//T_RadiusDamage(self, self->owner, 200, other, 100, MOD_BFG_BLAST);
+	T_RadiusDamage(self, self->owner, 0, other, 100, MOD_BFG_BLAST);
 
 	gi.sound (self, CHAN_VOICE, gi.soundindex ("weapons/bfg__x1b.wav"), 1, ATTN_NORM, 0);
 	self->solid = SOLID_NOT;
@@ -849,7 +889,8 @@ void bfg_think (edict_t *self)
 
 			// hurt it if we can
 			if ((tr.ent->takedamage) && !(tr.ent->flags & FL_IMMUNE_LASER) && (tr.ent != self->owner))
-				T_Damage (tr.ent, self, self->owner, dir, tr.endpos, vec3_origin, dmg, 1, DAMAGE_ENERGY, MOD_BFG_LASER);
+				//T_Damage (tr.ent, self, self->owner, dir, tr.endpos, vec3_origin, dmg, 1, DAMAGE_ENERGY, MOD_BFG_LASER);
+				T_Damage(tr.ent, self, self->owner, dir, tr.endpos, vec3_origin, 0, 1, DAMAGE_ENERGY, MOD_BFG_LASER);
 
 			// if we hit something that's not a monster or player we're done
 			if (!(tr.ent->svflags & SVF_MONSTER) && (!tr.ent->client))
@@ -866,6 +907,12 @@ void bfg_think (edict_t *self)
 
 			ignore = tr.ent;
 			VectorCopy (tr.endpos, start);
+
+			vec3_t enemyPosition;
+			VectorSubtract(self->s.origin, ent->s.origin, enemyPosition);
+			float enemySpeed = VectorLength(ent->velocity) * 0.05;
+			VectorScale(enemyPosition, enemySpeed, enemyPosition);
+			VectorAdd(ent->velocity, enemyPosition, ent->velocity);
 		}
 
 		gi.WriteByte (svc_temp_entity);
@@ -913,4 +960,6 @@ void fire_bfg (edict_t *self, vec3_t start, vec3_t dir, int damage, int speed, f
 		check_dodge (self, bfg->s.origin, dir, speed);
 
 	gi.linkentity (bfg);
+
+	exploded = 1;
 }
