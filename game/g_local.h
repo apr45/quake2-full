@@ -103,7 +103,10 @@ typedef enum
 	AMMO_ROCKETS,
 	AMMO_GRENADES,
 	AMMO_CELLS,
-	AMMO_SLUGS
+	AMMO_SLUGS,
+	// custom ammo
+		AMMO_CANDYAPPLE,
+		AMMO_PLUSHPRIZE,
 } ammo_t;
 
 
@@ -851,6 +854,7 @@ typedef struct
 	int			max_grenades;
 	int			max_cells;
 	int			max_slugs;
+	int			max_candyapple;
 
 	gitem_t		*weapon;
 	gitem_t		*lastweapon;
@@ -1109,5 +1113,8 @@ struct edict_s
 	// common data blocks
 	moveinfo_t		moveinfo;
 	monsterinfo_t	monsterinfo;
+
+	// custom entity attributes
+	int			slowDown;
 };
 

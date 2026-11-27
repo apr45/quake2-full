@@ -162,6 +162,11 @@ The monster is walking it's beat
 */
 void ai_walk (edict_t *self, float dist)
 {
+	// speed decreases if struck by candy apple
+	if (self->slowDown == 1) {
+		dist *= 0.3;
+	}
+
 	M_MoveToGoal (self, dist);
 
 	// check for noticing a player
@@ -923,6 +928,11 @@ void ai_run (edict_t *self, float dist)
 	vec3_t		v_forward, v_right;
 	float		left, center, right;
 	vec3_t		left_target, right_target;
+
+	// speed decreases if struck by candy apple
+	if (self->slowDown == 1) {
+		dist *= 0.3;
+	}
 
 	// if we're going to a combat point, just proceed
 	if (self->monsterinfo.aiflags & AI_COMBAT_POINT)

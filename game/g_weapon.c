@@ -406,30 +406,38 @@ static void Grenade_Explode (edict_t *ent)
 	//FIXME: if we are onground then raise our Z just a bit since we are a point?
 	if (ent->enemy)
 	{
-		float	points;
-		vec3_t	v;
-		vec3_t	dir;
+		if (Q_stricmp(ent->owner->client->pers.weapon->pickup_name, "candyapple") == 0) {
+			ent->enemy->slowDown = 1;
+		}
+		else if (Q_stricmp(ent->owner->client->pers.weapon->pickup_name, "plushprize") != 0) {
+			float	points;
+			vec3_t	v;
+			vec3_t	dir;
 
-		VectorAdd (ent->enemy->mins, ent->enemy->maxs, v);
-		VectorMA (ent->enemy->s.origin, 0.5, v, v);
-		VectorSubtract (ent->s.origin, v, v);
-		points = ent->dmg - 0.5 * VectorLength (v);
-		VectorSubtract (ent->enemy->s.origin, ent->s.origin, dir);
-		if (ent->spawnflags & 1)
-			mod = MOD_HANDGRENADE;
-		else
-			mod = MOD_GRENADE;
-		T_Damage (ent->enemy, ent, ent->owner, dir, ent->s.origin, vec3_origin, (int)points, (int)points, DAMAGE_RADIUS, mod);
+			VectorAdd(ent->enemy->mins, ent->enemy->maxs, v);
+			VectorMA(ent->enemy->s.origin, 0.5, v, v);
+			VectorSubtract(ent->s.origin, v, v);
+			points = ent->dmg - 0.5 * VectorLength(v);
+			VectorSubtract(ent->enemy->s.origin, ent->s.origin, dir);
+			if (ent->spawnflags & 1)
+				mod = MOD_HANDGRENADE;
+			else
+				mod = MOD_GRENADE;
+			T_Damage(ent->enemy, ent, ent->owner, dir, ent->s.origin, vec3_origin, (int)points, (int)points, DAMAGE_RADIUS, mod);
+		}
 	}
 
-	if (ent->spawnflags & 2)
-		mod = MOD_HELD_GRENADE;
-	else if (ent->spawnflags & 1)
-		mod = MOD_HG_SPLASH;
-	else
-		mod = MOD_G_SPLASH;
-	T_RadiusDamage(ent, ent->owner, ent->dmg, ent->enemy, ent->dmg_radius, mod);
+	if ((Q_stricmp(ent->owner->client->pers.weapon->pickup_name, "candyapple") != 0) && (Q_stricmp(ent->owner->client->pers.weapon->pickup_name, "plushprize") != 0)) {
+		if (ent->spawnflags & 2)
+			mod = MOD_HELD_GRENADE;
+		else if (ent->spawnflags & 1)
+			mod = MOD_HG_SPLASH;
+		else
+			mod = MOD_G_SPLASH;
+		T_RadiusDamage(ent, ent->owner, ent->dmg, ent->enemy, ent->dmg_radius, mod);
+	}
 
+	
 	VectorMA (ent->s.origin, -0.02, ent->velocity, origin);
 	gi.WriteByte (svc_temp_entity);
 	if (ent->waterlevel)
@@ -448,7 +456,7 @@ static void Grenade_Explode (edict_t *ent)
 	}
 	gi.WritePosition (origin);
 	gi.multicast (ent->s.origin, MULTICAST_PHS);
-
+	
 	G_FreeEdict (ent);
 }
 
@@ -481,6 +489,24 @@ static void Grenade_Touch (edict_t *ent, edict_t *other, cplane_t *plane, csurfa
 
 	ent->enemy = other;
 	Grenade_Explode (ent);
+}
+
+static void Grenade_Attract(edict_t *ent) {
+	edict_t *monster = NULL;
+
+	while ((monster = findradius(monster, ent->s.origin, 100)) != NULL) {
+		if ((monster->svflags & SVF_MONSTER) && monster->health > 0) {
+			monster->enemy = ent;
+			FoundTarget(monster);
+		}
+	}
+
+	if (level.time >= ent->delay) {
+		gi.dprintf("KABOOM");
+		Grenade_Explode(ent);
+	}
+
+	ent->nextthink = level.time + FRAMETIME;
 }
 
 void fire_grenade (edict_t *self, vec3_t start, vec3_t aimdir, int damage, int speed, float timer, float damage_radius)
@@ -541,7 +567,14 @@ void fire_grenade2 (edict_t *self, vec3_t start, vec3_t aimdir, int damage, int 
 	grenade->owner = self;
 	grenade->touch = Grenade_Touch;
 	grenade->nextthink = level.time + timer;
-	grenade->think = Grenade_Explode;
+
+	if (Q_stricmp(self->client->pers.weapon->pickup_name, "plushprize") == 0) {
+		grenade->delay = level.time + 10.0f;
+		grenade->think = Grenade_Attract;
+	}
+	else 
+		grenade->think = Grenade_Explode;
+
 	grenade->dmg = damage;
 	grenade->dmg_radius = damage_radius;
 	grenade->classname = "hgrenade";
@@ -550,7 +583,6 @@ void fire_grenade2 (edict_t *self, vec3_t start, vec3_t aimdir, int damage, int 
 	else
 		grenade->spawnflags = 1;
 	grenade->s.sound = gi.soundindex("weapons/hgrenc1b.wav");
-
 	if (timer <= 0.0)
 		Grenade_Explode (grenade);
 	else

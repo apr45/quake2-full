@@ -35,6 +35,8 @@ void Weapon_Grenade (edict_t *ent);
 void Weapon_GrenadeLauncher (edict_t *ent);
 void Weapon_Railgun (edict_t *ent);
 void Weapon_BFG (edict_t *ent);
+// custom weapon think functions
+void Weapon_CandyApple (edict_t *ent);
 
 gitem_armor_t jacketarmor_info	= { 25,  50, .30, .00, ARMOR_JACKET};
 gitem_armor_t combatarmor_info	= { 50, 100, .60, .30, ARMOR_COMBAT};
@@ -464,6 +466,8 @@ qboolean Add_Ammo (edict_t *ent, gitem_t *item, int count)
 		max = ent->client->pers.max_cells;
 	else if (item->tag == AMMO_SLUGS)
 		max = ent->client->pers.max_slugs;
+	else if (item->tag == AMMO_CANDYAPPLE)
+		max = ent->client->pers.max_candyapple;
 	else
 		return false;
 
@@ -2109,6 +2113,51 @@ tank commander's head
 		NULL,
 		0,
 /* precache */ "items/s_health.wav items/n_health.wav items/l_health.wav items/m_health.wav"
+	},
+
+//-------------------------------------------------------- custom items --------------------------------------------------------
+	// candy apple (weapon? item?)
+	{
+		"ammo_grenades",
+		Pickup_Ammo,
+		Use_Weapon,
+		Drop_Ammo,
+		Weapon_Grenade,
+		"misc/am_pkup.wav",
+		"models/items/ammo/grenades/medium/tris.md2", 0,
+		"models/weapons/v_handgr/tris.md2",
+		/* icon */		"a_grenades",
+		/* pickup */	"CandyApple",
+		/* width */		3,
+		10,
+		"candyapple",
+		IT_AMMO|IT_WEAPON,
+		WEAP_GRENADES,
+		NULL,
+		AMMO_CANDYAPPLE,
+		/* precache */ "weapons/hgrent1a.wav weapons/hgrena1b.wav weapons/hgrenc1b.wav weapons/hgrenb1a.wav weapons/hgrenb2a.wav "
+	},
+
+	// plush prize item
+	{
+		"ammo_grenades",
+		Pickup_Ammo,
+		Use_Weapon,
+		Drop_Ammo,
+		Weapon_Grenade,
+		"misc/am_pkup.wav",
+		"models/items/ammo/grenades/medium/tris.md2", 0,
+		"models/weapons/v_handgr/tris.md2",
+		/* icon */		"a_grenades",
+		/* pickup */	"PlushPrize",
+		/* width */		3,
+		5,
+		"plushprize",
+		IT_AMMO | IT_WEAPON,
+		WEAP_GRENADES,
+		NULL,
+		AMMO_PLUSHPRIZE,
+		/* precache */ "weapons/hgrent1a.wav weapons/hgrena1b.wav weapons/hgrenc1b.wav weapons/hgrenb1a.wav weapons/hgrenb2a.wav "
 	},
 
 	// end of list marker
